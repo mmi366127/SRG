@@ -1,60 +1,8 @@
-from torch.utils.data.sampler import WeightedRandomSampler
 import matplotlib.pyplot as plt
 import torch.nn.functional as F
 import torch, random
 import numpy as np
 import os
-
-class SRG_sampler:
-    def __init__(self, numInstance: int):
-        self.numInstance = numInstance
-        self.lam = np.ones(numInstance) / numInstance
-        self.pi = [i for i in range(numInstance)]
-        self.p = np.ones(numInstance)
-        self.a = np.ones(numInstance)
-        self.eps = 1.0 / numInstance
-
-
-    def update(self, idx: int, L2_norm):
-        self.a[idx] = L2_norm 
-        self.pi.sort(key = lambda x: -self.a[x])
-
-    def sample(self):
-        # return random.randint(0, self.numInstance - 1)
-
-        # calculate lambda(i)
-        part_sum = 0
-        for i in range(1, self.numInstance + 1):
-            idx = self.pi[i - 1] + 1
-            part_sum += self.a[idx - 1]
-            self.lam[idx - 1] = part_sum / (1 - (self.numInstance - i) * self.eps)
-
-        # calculate rho
-        rho = 0
-        for i in range(self.numInstance):
-            if self.a[i] >= self.eps * self.lam[i]:
-                rho = i + 1
-
-        # calculate p
-        for i in range(self.numInstance):
-            idx = self.pi[i] + 1
-            if idx <= rho:
-                self.p[i] = self.a[i] / self.lam[rho - 1]
-            else:
-                self.p[i] = self.eps
-    
-        self.p /= np.sum(self.p)
-
-        return np.random.choice(np.arange(self.numInstance), p = self.p)
-
-# class SRG_sampler(WeightedRandomSampler):
-#     def __init__(self, numInstances: int):
-#         samples_weight = np.ones(numInstances) / numInstances
-#         samples_weight = torch.from_numpy(samples_weight)
-#         super(SRG_sampler, self).__init__(samples_weight.type('torch.DoubleTensor'), len(samples_weight))
-
-#     def update(self):
-#         pass
 
 class AverageCalculator():
     def __init__(self):
@@ -100,3 +48,13 @@ def plot_train_stats(train_loss, val_loss, train_acc, val_acc, directory, acc_lo
     plt.savefig(os.path.join(directory, 'train_stats.png'))
     plt.close()
 
+def max_and_average_L(dataset):
+    res_max, res_ave = 0.0, 0.0
+    for x_i, y_i in dataset:
+        _norm = torch.norm(x_i).data.item()
+        _norm = _norm * _norm
+        res_ave += _norm
+        res_max = max(res_max, _norm)
+    res_max += 1.0 / len(dataset)
+    res_ave = (res_ave + 1) / len(dataset)
+    return res_max, res_ave

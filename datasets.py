@@ -59,6 +59,8 @@ class Phishing(myDataset):
         Files: phishing.txt
         """
         super(Phishing, self).__init__(2, 11055, 68, "phishing.txt")
+        self.label = self.label.unsqueeze(1)
+
 
 class W8A(myDataset):
     def __init__(self):
