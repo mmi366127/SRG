@@ -4,6 +4,10 @@ outputs/
 *.py[cod]
 *$py.class
 
+cpp/CMakeCache.txt
+cpp/CMakeFiles
+*.cmake
+
 # C extensions
 *.so
 

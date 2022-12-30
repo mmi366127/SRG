@@ -4,6 +4,18 @@ import torch, random
 import numpy as np
 import os
 
+class LRScheduler():
+    def __init__(self, optimizer, lr):
+        self.epoch = 1
+        self.lr_start = lr
+        self.optimizer = optimizer
+
+    def step(self):
+        self.epoch += 1
+        lr = self.lr_start / self.epoch
+        for param_group in self.optimizer.param_groups:
+            param_group['lr'] = lr
+
 class AverageCalculator():
     def __init__(self):
         self.reset() 
@@ -19,18 +31,12 @@ class AverageCalculator():
         self.count += n
         self.avg = self.sum / float(self.count)
 
-def loss_fn(y, target, model, L2_reg = 0.0001, return_norm = False):
+def loss_fn(y, target, model, L2_reg=0.0001, weight=None):
     # binary cross entropy + L2 regularization
     L2_norm = sum(p.pow(2.0).sum() for p in model.parameters())
-    if return_norm:
-        # return torch.log(1.0 + torch.exp(-target * y)) + L2_reg * L2_norm, L2_norm
-        return F.binary_cross_entropy_with_logits(y, target) + L2_reg * L2_norm, L2_norm
-    # return torch.sum(torch.log(1.0 + torch.exp(-target * y))) + L2_reg * L2_norm
-    # return F.binary_cross_entropy(y, target) + L2_reg * L2_norm
-    return F.binary_cross_entropy_with_logits(y, target) + L2_reg * L2_norm
+    return F.binary_cross_entropy_with_logits(y, target, weight=weight) + L2_reg * L2_norm
 
 def accuracy(yhat, labels):
-    # yhat = torch.sigmoid(yhat)
     return (torch.where(yhat > 0.5, 1, 0) == labels).sum().data.item() / float(len(labels))
 
 def plot_train_stats(train_loss, val_loss, train_acc, val_acc, directory, acc_low=0):

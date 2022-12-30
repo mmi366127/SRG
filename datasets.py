@@ -20,7 +20,7 @@ class myDataset(Dataset):
         with open(filename, 'r') as f:
             for (idx, line) in enumerate(f.readlines()):
                 line = line.split()
-                self.label[idx] = int(line[0])
+                self.label[idx] = float(line[0])
                 for i in range(1, len(line)):
                     temp = line[i].split(':')
                     self.data[idx, int(temp[0]) - 1] = float(temp[1]) 
@@ -61,7 +61,6 @@ class Phishing(myDataset):
         super(Phishing, self).__init__(2, 11055, 68, "phishing.txt")
         self.label = self.label.unsqueeze(1)
 
-
 class W8A(myDataset):
     def __init__(self):
         """
@@ -90,4 +89,15 @@ class IJCNN1(myDataset):
         super(IJCNN1, self).__init__(2, 49990, 22, "ijcnn1.txt")
         # set label from [-1, +1] to [0, 1]
         self.label = (self.label + 1.0) / 2.0
+        self.label = self.label.unsqueeze(1)
+
+class SYNTHETIC(myDataset):
+    def __init__(self):
+        """
+        Source: generate by generate.py
+        # of data: 1000
+        # of feature: 10
+    F   File: synthetic.txt
+        """
+        super(SYNTHETIC, self).__init__(2, 1000, 10, 'synthetic.txt')
         self.label = self.label.unsqueeze(1)
