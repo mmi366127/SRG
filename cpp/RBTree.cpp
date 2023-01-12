@@ -22,9 +22,8 @@ node::node(double val, int idx) {
     left = right = parent = nullptr;
 }
 
-RBTree::RBTree(int n_, double eps_ = 0.001) : gen(rd()), dis(0, 1) {
-    root = nullptr; eps = eps_; n = n;
-    // arr = new node*[n];
+RBTree::RBTree(int n_, double eps_ = 0.001) : gen(rd()), dis(0, 1), arr(n_) {
+    root = nullptr; eps = eps_; n = n_;
 }
 
 node* RBTree::find(double val) {
@@ -41,16 +40,25 @@ node* RBTree::find(double val) {
     return nullptr;
 }
 
-bool chk(node *x, int &sz, double &sm, double eps = 1e-6) {
+bool chk_(node *x, int &sz, double &sm, double eps = 1e-6) {
     if(x == nullptr) return true;
     int _sz = 1; double _sm = x->key;
-    printf("%f ", x->key);
-    if(!chk(x->left, _sz, _sm)) return false;
-    if(!chk(x->right, _sz, _sm)) return false;
+    if(!chk_(x->left, _sz, _sm)) return false;
+    if(!chk_(x->right, _sz, _sm)) return false;
     if(_sz != size(x) || fabs(_sm - sum(x)) > eps) {
         return false;
     }
     sz += _sz; sm += _sm;
+    return true;
+}
+
+bool RBTree::chk() {
+    int _sz = 0; 
+    double _sm = 0.0; 
+    if(!chk_(root, _sz, _sm)) return false;
+    if(_sz != size(root) || fabs(_sm - sum(root)) > eps) {
+        return false;
+    }
     return true;
 }
 
@@ -65,6 +73,7 @@ void dfs(node *x) {
 node* RBTree::insert(double val, int idx) {
     node *p, *q;
     node *x = new node(val, idx);
+    arr[idx] = x; 
     p = root, q = nullptr;
     if (root == nullptr) {
         x->color = 'b';
@@ -438,13 +447,13 @@ double partial_sum(node *x) {
 
 node* RBTree::select_sum(double x) {
     node *p = root;
-    while(x > 0) {
-        if(sum(p->right) >= x) {
+    while(x >= 0.0) {
+        if(sum(p->right) > x) {
             p = p->right;
         }
         else {
             x -= sum(p->right) + p->key;
-            if(x <= 0.0) return p;
+            if(x < 0.0) return p;
             p = p->left;
         }
     }
@@ -468,18 +477,29 @@ node* RBTree::select_rank(int rk) {
 
 int RBTree::sample() {
     node *w = solve();
-    int rho = rank(w);
+    rho = rank(w);
     double lambda = partial_sum(w) / (1.0 - eps * (size(root) - rho));
     double u = dis(gen);
     if(u < 1.0 - eps * (size(root) - rho)) {
         double s = lambda * u;
         node *v = select_sum(s);
+        p = v->key / lambda;
         return v->value;
     }
     else {
         u -= 1.0 - eps * (size(root) - rho);
         int r = size(root) - floor(u / eps);
         node *v = select_rank(r);
+        p = eps;
         return v->value;
     }
+}
+
+double RBTree::getWeight() {
+    return 1.0 / (p * n);
+}
+
+void RBTree::update(int idx, double val) {
+    erase(arr[idx]);
+    insert(val, idx);
 }

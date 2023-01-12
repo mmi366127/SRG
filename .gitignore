@@ -8,6 +8,8 @@ cpp/CMakeCache.txt
 cpp/CMakeFiles
 *.cmake
 
+draw.ipynb
+
 # C extensions
 *.so
 

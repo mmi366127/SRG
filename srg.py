@@ -1,15 +1,18 @@
 from torch.utils.data import Sampler
 from torch.optim import Optimizer
-import random, math, ctypes
+import random, ctypes
 from ctypes import *
 import numpy as np
-import copy
 
 lib = ctypes.CDLL('./cpp/liblibrary-python.so')
 
+lib.getObject.argtypes = [c_int, c_double]
+lib.insertObject.argtypes = [c_double, c_int]
+lib.updateObject.argtypes = [c_int, c_double]
+lib.getWeight.restype = c_double
+lib.sample.restype = c_int
 
 from torch.optim import Optimizer
-import copy
 
 class SRG(Optimizer):
     """
@@ -120,33 +123,57 @@ class Naive_sampler(Sampler):
                 self.need_update = False
             
             self.p /= np.sum(self.p)
-            index = np.random.choice(np.arange(self.numInstance), p = self.p)
+            index = np.random.choice(np.arange(self.numInstance), p=self.p)
             self.weight.append(1.0 / (self.p[index] * self.numInstance))
             self.update_list.append(index)
             yield index
 
+class RBTree_sampler(object):
+    def __init__(self, numInstance):
+        lib.getObject(c_int(numInstance), c_double(0.99999 / numInstance))
+        self.numInstance = numInstance
+        for i in range(numInstance):
+            lib.insertObject(c_double(1.0), c_int(i))
+        self.update_list = []
+        self.weight = []
+
+    def __del__(self):
+        lib.delObject()
+
+    def update(self, L: list):
+        for (i, norm) in enumerate(L):
+            self.update_(norm, self.update_list[i])
+        self.update_list = []
+        self.weight = []
+
+    def get_weight(self):
+        return self.weight
+
+    def update_(self, val: float, idx: int):
+        lib.updateObject(c_int(idx), c_double(val))
+
+    def sample(self) -> int:
+        index = int(lib.sample())
+        w = float(lib.getWeight())
+        self.update_list.append(index)
+        self.weight.append(w)
+        return index
+
+    def __len__(self):
+        return self.numInstance
+
+    def __iter__(self):
+        for i in range(self.numInstance):
+            index = self.sample()
+            yield index
 
 if __name__ == '__main__':
 
-    loli = RB_sampler(n = 10, eps = 0.1)
+    loli = RBTree_sampler(10)
 
-    for i in range(10):
-        loli.insert(random.random(), i)
-        loli.display()
-
-    for i in range(10):
-        print(f'erase {loli.find_node[i].key}')
-        loli.erase(loli.find_node[i])
-        loli.display()
-
-    for i in range(10):
-        loli.insert(random.random(), i)
-        loli.display()
-
-    for i in range(10):
+    for i in range(1000):
         idx = loli.sample()
-        print(idx)
-        loli.update(random.random(), i)
+        loli.update(random.random(), idx)
 
     
     

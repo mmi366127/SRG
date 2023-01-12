@@ -10,7 +10,7 @@ class Model(nn.Module):
             self.w.weight.data = torch.zeros(self.w.weight.size()) 
 
     def forward(self, x):
-        return torch.sigmoid(self.w(x))
+        return self.w(x)
 
 class LinearRegression(nn.Module):
     def __init__(self, dim: int):

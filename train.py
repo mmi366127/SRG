@@ -11,8 +11,8 @@ import torch.nn.functional as F
 
 from utils import AverageCalculator, accuracy, plot_train_stats, loss_fn, max_and_average_L, LRScheduler
 from datasets import Mushrooms, Phishing, W8A, IJCNN1, SYNTHETIC
+from srg import Naive_sampler, RBTree_sampler, SRG, SRG_cal
 from model import Model, LinearRegression
-from srg import Naive_sampler, SRG, SRG_cal
 from svrg import SVRG, SVRG_Snapshot
 from sgd import SGD_Vanilla
 
@@ -208,7 +208,8 @@ if __name__ == "__main__":
     print(f'Data size: {len(train_set)}, # of Features: {train_set.numFeatures}')
 
     if args.optimizer == 'SRG':
-        mySampler = Naive_sampler(train_set.numInstance)
+        mySampler = RBTree_sampler(train_set.numInstance)
+        # mySampler = Naive_sampler(train_set.numInstance)
         train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=False, sampler=mySampler)
     elif args.optimizer == 'GD':
         train_loader = DataLoader(train_set, batch_size=len(train_set), shuffle=True)
@@ -280,15 +281,16 @@ if __name__ == "__main__":
         else:
             raise ValueError("Unknown optimizer")
         
-        _loss, _acc = validate(model, valid_loader, loss_fn, device)
-        print(_loss, _acc)
+        valid_loss, valid_acc = validate(model, valid_loader, loss_fn, device)
 
-        train_loss_all.append(_loss)
-        train_acc_all.append(_acc)
+        val_acc_all.append(valid_acc)
+        val_loss_all.append(valid_loss)
+        train_loss_all.append(valid_loss)
+        train_acc_all.append(valid_acc)
         train_para_all.append(para_weights.cpu().numpy())
         
         print_format = "iteration: {}, train loss: {:.4f}, train acc: {:.4f}, valid loss: {:.4f}, valid acc: {:.4f}, time: {:.2f} sec"
-        print(print_format.format(iteration, train_loss, train_acc, _loss, _acc, time.time() - t0))
+        print(print_format.format(iteration, train_loss, train_acc, valid_loss, valid_acc, time.time() - t0))
 
         if args.lr_decay:
             scheduler.step()

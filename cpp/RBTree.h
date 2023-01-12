@@ -2,7 +2,10 @@
 #define _INCLUDE_RBTREE_H_
 
 #include <stdio.h>
+#include <vector>
 #include <random>
+
+using namespace std;
 
 struct node {
     node(double, int);
@@ -23,10 +26,10 @@ class RBTree {
         // for sampler
         std::uniform_real_distribution<double> dis;
         std::random_device rd;
+        vector<node*> arr;
         std::mt19937 gen;
-        node **arr;
-        double eps;
-        int n;
+        double eps, p;
+        int n, rho;
 
     public:
         RBTree(int, double);
@@ -40,10 +43,13 @@ class RBTree {
         node *insert(double val, int idx);
 
         // for sampler
+        bool chk();
         int sample();
         node *solve();
+        double getWeight(int idx);
         node *select_rank(int rk);
         node *select_sum(double x);
+        void update(int idx, double val);
 };
 
 #endif
